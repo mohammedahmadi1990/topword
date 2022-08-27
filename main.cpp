@@ -4,11 +4,12 @@
 #include <fstream>
 #include <regex>
 
+
  /********************************************************************
   TOP WORD APPLICATION
-  Developed By: Me
-  Course Name:
-  Project: HW0:
+  Developed By: Med
+  Course Name: --
+  Project: HW0: Finding the most frequent word(s) in a file
 
   Requirements to Run:
     GNU C++ (g++)
@@ -38,7 +39,8 @@ int main(int argc, char *argv[]) {
     // beside number of repetition inside the text. Also map keeps data as sorted which
     // has enabled us to search/find with O(log n) time complexity since it internally utilizes BalancedBinarySearchTree.
     std::map<std::string, int> words;
-    const std::regex rgx("\\w+");
+    const std::regex rgx("\\w+"); // regex for matching unlimited number of words
+    std::vector<std::pair<std::string, int>> words_vector; // to keep words in a vector to sort based on freq and letter
 
     /*___ PROCESS ARGUMENT ___*/
     if (argc == 2) { // check if number of arguments are correct
@@ -65,7 +67,7 @@ int main(int argc, char *argv[]) {
         if (file.is_open()) {
             std::string line;
             while (getline(file, line)) {
-                // it will continue till the getline can get != NULL
+                // it will continue till the getline() can get != NULL
                 for (std::sregex_iterator it(line.begin(), line.end(), rgx), it_end; it != it_end; it++) {
                     // iterator of REGEX which can iterate result set of the content matching our REGEX
                     std::string word = (*it)[0];
@@ -78,10 +80,12 @@ int main(int argc, char *argv[]) {
                         // if there is a match inside the map add 1 to the frequency of the word
                         int count = words[key];
                         count++;
-                        words.insert_or_assign(key, count);
+                        words.erase(key);
+                        words.insert(std::pair<std::string,int>(key, count));
                     } else {
                         // if word is new add and put 1 as frequency
-                        words.insert_or_assign(key, 1);
+                        words.erase(key);
+                        words.insert(std::pair<std::string,int>(key, 1));
                     }
                 }
             }
@@ -91,16 +95,32 @@ int main(int argc, char *argv[]) {
         std::cout << e.what() << std::endl;
     }
 
+    // To copy all from Map to a Vector in order to sort based on Value and then key
+    std::copy(words.begin(),
+              words.end(),
+              std::back_inserter<std::vector<std::pair<std::string, int>>>(words_vector));
+
+    // Sorting based on internal STD sorting hybrid algorithm which consists of QuickSort, HeapSort, InsertionSort based
+    // on size and randomness of data
+    std::sort(words_vector.begin(), words_vector.end(),
+              [](const std::pair<std::string, int> &l, const std::pair<std::string, int> &r)
+              {
+                  if (l.second != r.second)
+                      return l.second > r.second;
+                  return l.first < r.first;
+              });
+
+
     /*___ WRITE TO FILE ___*/
     try {
         std::ofstream file;
         file.open(output);
-        for (auto it = words.begin(); it != words.end(); it++) {
-            // for is considered since we are aware of the size of the map and we can iterate to print key/value
-            file << it->first << " " << it->second << "\n";
+        for (auto const &record: words_vector) {
+            file << record.second << " " << record.first << "\n";
         }
         file.close();
     } catch (std::ofstream::failure &e) {
         std::cout << e.what() << std::endl;
     }
 }
+
